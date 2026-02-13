@@ -14,7 +14,250 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      access_keys: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          key: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key: string
+          role: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          role?: string
+        }
+        Relationships: []
+      }
+      attendance: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          status: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      batches: {
+        Row: {
+          id: string
+          name: string
+          subject: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          subject?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          subject?: string | null
+        }
+        Relationships: []
+      }
+      class_history: {
+        Row: {
+          batch_id: string
+          created_at: string
+          date: string
+          homework: string | null
+          id: string
+          teacher_notes: string | null
+          topic: string | null
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          date?: string
+          homework?: string | null
+          id?: string
+          teacher_notes?: string | null
+          topic?: string | null
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          date?: string
+          homework?: string | null
+          id?: string
+          teacher_notes?: string | null
+          topic?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fees: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          month: string
+          paid_on: string | null
+          payment_mode: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          month: string
+          paid_on?: string | null
+          payment_mode?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          month?: string
+          paid_on?: string | null
+          payment_mode?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fees_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          batch_id: string | null
+          class: string | null
+          created_at: string
+          id: string
+          joined_on: string | null
+          monthly_fee: number
+          name: string
+          notes: string | null
+          parent_name: string | null
+          parent_phone: string | null
+          priority_tag: string | null
+          status: string
+        }
+        Insert: {
+          batch_id?: string | null
+          class?: string | null
+          created_at?: string
+          id?: string
+          joined_on?: string | null
+          monthly_fee?: number
+          name: string
+          notes?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          priority_tag?: string | null
+          status?: string
+        }
+        Update: {
+          batch_id?: string | null
+          class?: string | null
+          created_at?: string
+          id?: string
+          joined_on?: string | null
+          monthly_fee?: number
+          name?: string
+          notes?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          priority_tag?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tests: {
+        Row: {
+          created_at: string
+          id: string
+          marks: number | null
+          remarks: string | null
+          student_id: string
+          subject: string
+          test_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          marks?: number | null
+          remarks?: string | null
+          student_id: string
+          subject: string
+          test_date?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          marks?: number | null
+          remarks?: string | null
+          student_id?: string
+          subject?: string
+          test_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tests_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
