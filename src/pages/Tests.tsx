@@ -3,12 +3,13 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 
 export default function Tests() {
   const [tests, setTests] = useState<any[]>([]);
@@ -20,8 +21,8 @@ export default function Tests() {
 
   async function loadData() {
     const [tRes, sRes] = await Promise.all([
-      supabase.from("tests").select("*, students(name)").order("test_date", { ascending: false }),
-      supabase.from("students").select("id, name").eq("status", "active").order("name"),
+      supabase.from("tests").select("*, students(name)").is("deleted_at", null).order("test_date", { ascending: false }),
+      supabase.from("students").select("id, name").eq("status", "active").is("deleted_at", null).order("name"),
     ]);
     setTests(tRes.data || []);
     setStudents(sRes.data || []);
@@ -29,13 +30,15 @@ export default function Tests() {
 
   async function addTest() {
     if (!form.student_id || !form.subject) return toast.error("Fill required fields");
-    const { error } = await supabase.from("tests").insert({
+    const student = students.find((s) => s.id === form.student_id);
+    const { data, error } = await supabase.from("tests").insert({
       student_id: form.student_id,
       subject: form.subject,
       marks: form.marks ? Number(form.marks) : null,
       remarks: form.remarks || null,
-    });
+    }).select().single();
     if (error) return toast.error("Failed to save");
+    await logAudit("create", "tests", data.id, `Added test for ${student?.name}: ${form.subject}`);
     toast.success("Test recorded!");
     setAdding(false);
     setForm({ student_id: "", subject: "", marks: "", remarks: "" });

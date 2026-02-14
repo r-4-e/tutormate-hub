@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, UserCircle } from "lucide-react";
+import { Search, Plus, UserCircle, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { logAudit, softDelete } from "@/lib/auditLog";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 export default function Students() {
   const navigate = useNavigate();
@@ -17,14 +19,13 @@ export default function Students() {
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", class: "", batch_id: "", parent_name: "", parent_phone: "", monthly_fee: "" });
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     const [s, b] = await Promise.all([
-      supabase.from("students").select("*, batches(name)").eq("status", "active").order("name"),
+      supabase.from("students").select("*, batches(name)").eq("status", "active").is("deleted_at", null).order("name"),
       supabase.from("batches").select("*"),
     ]);
     setStudents(s.data || []);
@@ -33,18 +34,28 @@ export default function Students() {
 
   async function addStudent() {
     if (!form.name) return toast.error("Name is required");
-    const { error } = await supabase.from("students").insert({
+    const { data, error } = await supabase.from("students").insert({
       name: form.name,
       class: form.class || null,
       batch_id: form.batch_id || null,
       parent_name: form.parent_name || null,
       parent_phone: form.parent_phone || null,
       monthly_fee: Number(form.monthly_fee) || 0,
-    });
+    }).select().single();
     if (error) return toast.error("Failed to add student");
+    await logAudit("create", "students", data.id, `Added student: ${form.name}`);
     toast.success("Student added!");
     setAdding(false);
     setForm({ name: "", class: "", batch_id: "", parent_name: "", parent_phone: "", monthly_fee: "" });
+    loadData();
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    const { error } = await softDelete("students", deleteTarget.id, `Deleted student: ${deleteTarget.name}`);
+    if (error) return toast.error("Failed to delete");
+    toast.success("Student removed");
+    setDeleteTarget(null);
     loadData();
   }
 
@@ -110,11 +121,27 @@ export default function Students() {
                 <p className="text-xs text-muted-foreground">Class {s.class} · {s.batches?.name || "No batch"}</p>
               </div>
               <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-semibold">₹{s.monthly_fee}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-destructive shrink-0"
+                onClick={(e) => { e.stopPropagation(); setDeleteTarget(s); }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </motion.div>
         ))}
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">No students found</p>}
       </div>
+
+      <DeleteConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={`Delete ${deleteTarget?.name}?`}
+        description="This student will be soft-deleted. An admin can restore them later from the admin dashboard."
+      />
     </div>
   );
 }

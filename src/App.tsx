@@ -4,10 +4,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useAccess } from "@/hooks/useAccess";
+import { AccessProvider } from "@/contexts/AccessContext";
 import Loading from "@/components/Loading";
 import AccessDenied from "@/components/AccessDenied";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
+import AdminDashboard from "@/pages/AdminDashboard";
 import Students from "@/pages/Students";
 import StudentProfile from "@/pages/StudentProfile";
 import Attendance from "@/pages/Attendance";
@@ -26,22 +28,24 @@ function AppContent() {
   if (state === "denied" || !role) return <AccessDenied />;
 
   return (
-    <BrowserRouter>
-      <AppLayout role={role} onLogout={logout}>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/students" element={<Students />} />
-          <Route path="/students/:id" element={<StudentProfile />} />
-          <Route path="/attendance" element={<Attendance />} />
-          <Route path="/fees" element={<Fees />} />
-          <Route path="/class-history" element={<ClassHistory />} />
-          <Route path="/tests" element={<Tests />} />
-          <Route path="/reports" element={<Reports />} />
-          {isAdmin && <Route path="/settings" element={<SettingsPage />} />}
-          <Route path="*" element={<Dashboard />} />
-        </Routes>
-      </AppLayout>
-    </BrowserRouter>
+    <AccessProvider role={role}>
+      <BrowserRouter>
+        <AppLayout role={role} onLogout={logout}>
+          <Routes>
+            <Route path="/" element={isAdmin ? <AdminDashboard /> : <Dashboard />} />
+            <Route path="/students" element={<Students />} />
+            <Route path="/students/:id" element={<StudentProfile />} />
+            <Route path="/attendance" element={<Attendance />} />
+            <Route path="/fees" element={<Fees />} />
+            <Route path="/class-history" element={<ClassHistory />} />
+            <Route path="/tests" element={<Tests />} />
+            <Route path="/reports" element={<Reports />} />
+            {isAdmin && <Route path="/settings" element={<SettingsPage />} />}
+            <Route path="*" element={isAdmin ? <AdminDashboard /> : <Dashboard />} />
+          </Routes>
+        </AppLayout>
+      </BrowserRouter>
+    </AccessProvider>
   );
 }
 

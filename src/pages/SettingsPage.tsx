@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Key, Trash2, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 
 export default function SettingsPage() {
   const [keys, setKeys] = useState<any[]>([]);
@@ -31,8 +32,9 @@ export default function SettingsPage() {
 
   async function addKey() {
     if (!newKey) return toast.error("Enter a key");
-    const { error } = await supabase.from("access_keys").insert({ key: newKey, role: newRole });
+    const { data, error } = await supabase.from("access_keys").insert({ key: newKey, role: newRole }).select().single();
     if (error) return toast.error("Failed — key might already exist");
+    await logAudit("create", "access_keys", data.id, `Added ${newRole} access key`);
     toast.success("Key added!");
     setNewKey("");
     loadData();
@@ -40,6 +42,7 @@ export default function SettingsPage() {
 
   async function deleteKey(id: string) {
     await supabase.from("access_keys").delete().eq("id", id);
+    await logAudit("delete", "access_keys", id, "Deleted access key");
     toast.success("Key deleted");
     loadData();
   }

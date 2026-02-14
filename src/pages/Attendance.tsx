@@ -8,6 +8,7 @@ import { CalendarIcon, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 
 export default function Attendance() {
   const [date, setDate] = useState<Date>(new Date());
@@ -32,8 +33,8 @@ export default function Attendance() {
   async function loadStudentsAndAttendance() {
     const dateStr = format(date, "yyyy-MM-dd");
     const [sRes, aRes] = await Promise.all([
-      supabase.from("students").select("id, name").eq("batch_id", batchId).eq("status", "active").order("name"),
-      supabase.from("attendance").select("student_id, status").eq("date", dateStr),
+      supabase.from("students").select("id, name").eq("batch_id", batchId).eq("status", "active").is("deleted_at", null).order("name"),
+      supabase.from("attendance").select("student_id, status").eq("date", dateStr).is("deleted_at", null),
     ]);
     setStudents(sRes.data || []);
     const rec: Record<string, string> = {};
@@ -48,9 +49,8 @@ export default function Attendance() {
   async function save() {
     setSaving(true);
     const dateStr = format(date, "yyyy-MM-dd");
-    // Delete existing for this date
     await supabase.from("attendance").delete().eq("date", dateStr).in("student_id", students.map((s) => s.id));
-    
+
     const rows = Object.entries(records)
       .filter(([, status]) => status)
       .map(([student_id, status]) => ({ student_id, date: dateStr, status }));
@@ -59,6 +59,9 @@ export default function Attendance() {
       const { error } = await supabase.from("attendance").insert(rows);
       if (error) { toast.error("Failed to save"); setSaving(false); return; }
     }
+
+    const batch = batches.find((b) => b.id === batchId);
+    await logAudit("create", "attendance", batchId, `Marked attendance for ${batch?.name} on ${dateStr} (${rows.length} students)`);
     toast.success("Attendance saved!");
     setSaving(false);
   }
