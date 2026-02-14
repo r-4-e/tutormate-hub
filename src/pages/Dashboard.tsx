@@ -17,9 +17,9 @@ export default function Dashboard() {
       const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
       const [studentsRes, feesRes, attendanceRes] = await Promise.all([
-        supabase.from("students").select("id, name, monthly_fee, batch_id").eq("status", "active"),
-        supabase.from("fees").select("student_id, amount, status").eq("month", month),
-        supabase.from("attendance").select("student_id, status").gte("date", `${month}-01`),
+        supabase.from("students").select("id, name, monthly_fee, batch_id").eq("status", "active").is("deleted_at", null),
+        supabase.from("fees").select("student_id, amount, status").eq("month", month).is("deleted_at", null),
+        supabase.from("attendance").select("student_id, status").gte("date", `${month}-01`).is("deleted_at", null),
       ]);
 
       const students = studentsRes.data || [];

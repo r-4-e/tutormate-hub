@@ -42,6 +42,7 @@ export type Database = {
         Row: {
           created_at: string
           date: string
+          deleted_at: string | null
           id: string
           status: string
           student_id: string
@@ -49,6 +50,7 @@ export type Database = {
         Insert: {
           created_at?: string
           date?: string
+          deleted_at?: string | null
           id?: string
           status: string
           student_id: string
@@ -56,6 +58,7 @@ export type Database = {
         Update: {
           created_at?: string
           date?: string
+          deleted_at?: string | null
           id?: string
           status?: string
           student_id?: string
@@ -69,6 +72,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_log: {
+        Row: {
+          action: string
+          actor_role: string
+          changes: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor_role: string
+          changes?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor_role?: string
+          changes?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: []
       }
       batches: {
         Row: {
@@ -93,6 +129,7 @@ export type Database = {
           batch_id: string
           created_at: string
           date: string
+          deleted_at: string | null
           homework: string | null
           id: string
           teacher_notes: string | null
@@ -102,6 +139,7 @@ export type Database = {
           batch_id: string
           created_at?: string
           date?: string
+          deleted_at?: string | null
           homework?: string | null
           id?: string
           teacher_notes?: string | null
@@ -111,6 +149,7 @@ export type Database = {
           batch_id?: string
           created_at?: string
           date?: string
+          deleted_at?: string | null
           homework?: string | null
           id?: string
           teacher_notes?: string | null
@@ -130,6 +169,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          deleted_at: string | null
           id: string
           month: string
           paid_on: string | null
@@ -140,6 +180,7 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string
+          deleted_at?: string | null
           id?: string
           month: string
           paid_on?: string | null
@@ -150,6 +191,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          deleted_at?: string | null
           id?: string
           month?: string
           paid_on?: string | null
@@ -172,6 +214,7 @@ export type Database = {
           batch_id: string | null
           class: string | null
           created_at: string
+          deleted_at: string | null
           id: string
           joined_on: string | null
           monthly_fee: number
@@ -186,6 +229,7 @@ export type Database = {
           batch_id?: string | null
           class?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           joined_on?: string | null
           monthly_fee?: number
@@ -200,6 +244,7 @@ export type Database = {
           batch_id?: string | null
           class?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           joined_on?: string | null
           monthly_fee?: number
@@ -223,6 +268,7 @@ export type Database = {
       tests: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           marks: number | null
           remarks: string | null
@@ -232,6 +278,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           marks?: number | null
           remarks?: string | null
@@ -241,6 +288,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           marks?: number | null
           remarks?: string | null

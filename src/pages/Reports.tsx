@@ -16,9 +16,9 @@ export default function Reports() {
 
   async function loadReport() {
     const [fRes, sRes, aRes] = await Promise.all([
-      supabase.from("fees").select("*, students(name, monthly_fee)").eq("month", month),
-      supabase.from("students").select("id, name, monthly_fee").eq("status", "active"),
-      supabase.from("attendance").select("student_id, status").gte("date", `${month}-01`).lte("date", `${month}-31`),
+      supabase.from("fees").select("*, students(name, monthly_fee)").eq("month", month).is("deleted_at", null),
+      supabase.from("students").select("id, name, monthly_fee").eq("status", "active").is("deleted_at", null),
+      supabase.from("attendance").select("student_id, status").gte("date", `${month}-01`).lte("date", `${month}-31`).is("deleted_at", null),
     ]);
 
     const fees = fRes.data || [];

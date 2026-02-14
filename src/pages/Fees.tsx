@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, IndianRupee } from "lucide-react";
+import { Plus, IndianRupee, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { logAudit, softDelete } from "@/lib/auditLog";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 export default function Fees() {
   const [fees, setFees] = useState<any[]>([]);
@@ -17,15 +19,14 @@ export default function Fees() {
   const now = new Date();
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
   const [form, setForm] = useState({ student_id: "", amount: "", payment_mode: "cash" });
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [month]);
+  useEffect(() => { loadData(); }, [month]);
 
   async function loadData() {
     const [fRes, sRes] = await Promise.all([
-      supabase.from("fees").select("*, students(name)").eq("month", month).order("created_at", { ascending: false }),
-      supabase.from("students").select("id, name, monthly_fee").eq("status", "active").order("name"),
+      supabase.from("fees").select("*, students(name)").eq("month", month).is("deleted_at", null).order("created_at", { ascending: false }),
+      supabase.from("students").select("id, name, monthly_fee").eq("status", "active").is("deleted_at", null).order("name"),
     ]);
     setFees(fRes.data || []);
     setStudents(sRes.data || []);
@@ -35,15 +36,16 @@ export default function Fees() {
     if (!form.student_id) return toast.error("Select a student");
     const student = students.find((s) => s.id === form.student_id);
     const amount = Number(form.amount) || student?.monthly_fee || 0;
-    const { error } = await supabase.from("fees").insert({
+    const { data, error } = await supabase.from("fees").insert({
       student_id: form.student_id,
       month,
       amount,
       status: "paid",
       paid_on: new Date().toISOString().split("T")[0],
       payment_mode: form.payment_mode,
-    });
+    }).select().single();
     if (error) return toast.error("Failed to add fee");
+    await logAudit("create", "fees", data.id, `Recorded ₹${amount} fee for ${student?.name}`);
     toast.success("Fee recorded!");
     setAdding(false);
     setForm({ student_id: "", amount: "", payment_mode: "cash" });
@@ -52,7 +54,17 @@ export default function Fees() {
 
   async function markPaid(feeId: string) {
     await supabase.from("fees").update({ status: "paid", paid_on: new Date().toISOString().split("T")[0] }).eq("id", feeId);
+    await logAudit("update", "fees", feeId, "Marked fee as paid");
     toast.success("Marked as paid!");
+    loadData();
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    const { error } = await softDelete("fees", deleteTarget.id, `Deleted fee record for ${deleteTarget.students?.name}`);
+    if (error) return toast.error("Failed to delete");
+    toast.success("Fee record removed");
+    setDeleteTarget(null);
     loadData();
   }
 
@@ -116,7 +128,12 @@ export default function Fees() {
                 <p className="font-semibold text-sm">{f.students?.name}</p>
                 <p className="text-xs text-muted-foreground">₹{f.amount}</p>
               </div>
-              <Button size="sm" className="rounded-lg" onClick={() => markPaid(f.id)}>Mark Paid</Button>
+              <div className="flex gap-1">
+                <Button size="sm" className="rounded-lg" onClick={() => markPaid(f.id)}>Mark Paid</Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget(f)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </motion.div>
           ))}
         </TabsContent>
@@ -130,11 +147,24 @@ export default function Fees() {
                 <p className="font-semibold text-sm">{f.students?.name}</p>
                 <p className="text-xs text-muted-foreground">₹{f.amount} · {f.payment_mode} · {f.paid_on}</p>
               </div>
-              <span className="text-xs bg-success/15 text-success px-2 py-1 rounded-full font-semibold">Paid</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs bg-success/15 text-success px-2 py-1 rounded-full font-semibold">Paid</span>
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget(f)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </motion.div>
           ))}
         </TabsContent>
       </Tabs>
+
+      <DeleteConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete fee record?"
+        description="This fee record will be soft-deleted. An admin can restore it later."
+      />
     </div>
   );
 }

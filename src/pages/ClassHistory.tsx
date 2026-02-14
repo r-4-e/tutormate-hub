@@ -10,6 +10,7 @@ import { Plus, BookOpen } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { logAudit } from "@/lib/auditLog";
 
 export default function ClassHistory() {
   const [entries, setEntries] = useState<any[]>([]);
@@ -28,20 +29,22 @@ export default function ClassHistory() {
   useEffect(() => { if (batchFilter) loadEntries(); }, [batchFilter]);
 
   async function loadEntries() {
-    const { data } = await supabase.from("class_history").select("*, batches(name)").eq("batch_id", batchFilter).order("date", { ascending: false });
+    const { data } = await supabase.from("class_history").select("*, batches(name)").eq("batch_id", batchFilter).is("deleted_at", null).order("date", { ascending: false });
     setEntries(data || []);
   }
 
   async function addEntry() {
     if (!form.batch_id) return toast.error("Select a batch");
-    const { error } = await supabase.from("class_history").insert({
+    const batch = batches.find((b) => b.id === form.batch_id);
+    const { data, error } = await supabase.from("class_history").insert({
       batch_id: form.batch_id,
       date: format(new Date(), "yyyy-MM-dd"),
       topic: form.topic || null,
       homework: form.homework || null,
       teacher_notes: form.teacher_notes || null,
-    });
+    }).select().single();
     if (error) return toast.error("Failed to save");
+    await logAudit("create", "class_history", data.id, `Logged class for ${batch?.name}: ${form.topic || "No topic"}`);
     toast.success("Class logged!");
     setAdding(false);
     setForm({ ...form, topic: "", homework: "", teacher_notes: "" });
