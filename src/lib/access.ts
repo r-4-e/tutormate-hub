@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const STORAGE_KEY = "trackly_session";
+const STORAGE_KEY = "tracly_session";
 
 export type UserRole = "admin" | "teacher";
 

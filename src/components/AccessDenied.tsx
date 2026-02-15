@@ -19,7 +19,7 @@ export default function AccessDenied() {
         </motion.div>
         <h1 className="text-3xl font-bold text-foreground">Access Denied</h1>
         <p className="text-muted-foreground max-w-sm">
-          You need a valid access key to use Trackly. Please contact the admin.
+          You need a valid access key to use Tracly. Please contact the admin.
         </p>
       </motion.div>
     </div>
