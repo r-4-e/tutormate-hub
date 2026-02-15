@@ -42,7 +42,7 @@ export default function AppLayout({ children, role, onLogout }: Props) {
           <button onClick={() => setOpen(true)} className="p-2 rounded-lg hover:bg-accent transition-colors">
             <Menu className="h-5 w-5" />
           </button>
-          <h1 className="text-lg font-bold text-primary">Trackly</h1>
+          <h1 className="text-lg font-bold text-primary">Tracly</h1>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={toggle} className="p-2 rounded-lg hover:bg-accent transition-colors">
@@ -71,7 +71,7 @@ export default function AppLayout({ children, role, onLogout }: Props) {
             >
               <div className="p-4 flex items-center justify-between border-b">
                 <div>
-                  <h2 className="text-xl font-bold text-primary">Trackly</h2>
+                  <h2 className="text-xl font-bold text-primary">Tracly</h2>
                   <p className="text-xs text-muted-foreground">Track. Teach. Thrive.</p>
                 </div>
                 <button onClick={() => setOpen(false)} className="p-2 rounded-lg hover:bg-accent">
