@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Copy, Check } from "lucide-react";
+import { ArrowLeft, Copy, Check, Flame, Trophy, Star } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -104,8 +104,9 @@ export default function StudentProfile() {
           <InfoRow label="Joined" value={student.joined_on || "—"} />
         </TabsContent>
 
-        <TabsContent value="attendance" className="mt-3">
-          <p className="text-sm text-muted-foreground mb-2">Last 30 records · {attPct}% present</p>
+        <TabsContent value="attendance" className="mt-3 space-y-3">
+          <AttendanceStreaks attendance={attendance} />
+          <p className="text-sm text-muted-foreground">Last 30 records · {attPct}% present</p>
           <div className="flex flex-wrap gap-1">
             {attendance.map((a) => (
               <div key={a.id} className={`h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold ${a.status === "present" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
@@ -229,6 +230,68 @@ function PerformanceChart({ tests }: { tests: any[] }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
+    </div>
+  );
+}
+
+function AttendanceStreaks({ attendance }: { attendance: any[] }) {
+  const { currentStreak, bestStreak, totalPresent, total } = useMemo(() => {
+    const sorted = [...attendance].sort((a, b) => b.date.localeCompare(a.date));
+    let currentStreak = 0;
+    for (const a of sorted) {
+      if (a.status === "present") currentStreak++;
+      else break;
+    }
+    let bestStreak = 0, run = 0;
+    const chronological = [...attendance].sort((a, b) => a.date.localeCompare(b.date));
+    for (const a of chronological) {
+      if (a.status === "present") { run++; bestStreak = Math.max(bestStreak, run); }
+      else run = 0;
+    }
+    const totalPresent = attendance.filter((a) => a.status === "present").length;
+    return { currentStreak, bestStreak, totalPresent, total: attendance.length };
+  }, [attendance]);
+
+  if (total === 0) return null;
+
+  const badges = [];
+  if (currentStreak >= 10) badges.push({ icon: Trophy, label: "10+ Streak!", color: "text-yellow-500" });
+  else if (currentStreak >= 5) badges.push({ icon: Star, label: "5+ Streak!", color: "text-primary" });
+  if (currentStreak >= 3) badges.push({ icon: Flame, label: `${currentStreak} day streak`, color: "text-orange-500" });
+
+  return (
+    <div className="bg-card border rounded-xl p-3 space-y-2">
+      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Attendance Streaks</h4>
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="bg-muted rounded-lg p-2">
+          <div className="flex items-center justify-center gap-1">
+            <Flame className="h-4 w-4 text-orange-500" />
+            <span className="text-lg font-bold">{currentStreak}</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground">Current</p>
+        </div>
+        <div className="bg-muted rounded-lg p-2">
+          <div className="flex items-center justify-center gap-1">
+            <Trophy className="h-4 w-4 text-yellow-500" />
+            <span className="text-lg font-bold">{bestStreak}</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground">Best</p>
+        </div>
+        <div className="bg-muted rounded-lg p-2">
+          <span className="text-lg font-bold">{total > 0 ? Math.round((totalPresent / total) * 100) : 0}%</span>
+          <p className="text-[10px] text-muted-foreground">Overall</p>
+        </div>
+      </div>
+      {badges.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {badges.map((b, i) => (
+            <motion.span key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: i * 0.1, type: "spring" }}
+              className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-muted ${b.color}`}>
+              <b.icon className="h-3 w-3" /> {b.label}
+            </motion.span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
