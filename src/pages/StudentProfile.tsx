@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Copy, Check } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -133,8 +134,9 @@ export default function StudentProfile() {
           <p className="text-sm">{student.notes || "No notes yet"}</p>
         </TabsContent>
 
-        <TabsContent value="tests" className="mt-3 space-y-2">
+        <TabsContent value="tests" className="mt-3 space-y-4">
           {tests.length === 0 && <p className="text-muted-foreground text-sm">No test records</p>}
+          {tests.length >= 2 && <PerformanceChart tests={tests} />}
           {tests.map((t) => (
             <div key={t.id} className="bg-muted/50 rounded-xl p-3">
               <div className="flex justify-between">
@@ -176,6 +178,57 @@ export default function StudentProfile() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+const SUBJECT_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(340, 60%, 80%)",
+  "hsl(200, 70%, 50%)",
+  "hsl(150, 60%, 45%)",
+  "hsl(40, 80%, 55%)",
+];
+
+function PerformanceChart({ tests }: { tests: any[] }) {
+  const { subjects, chartData } = useMemo(() => {
+    const sorted = [...tests].filter((t) => t.marks != null).sort((a, b) => a.test_date.localeCompare(b.test_date));
+    const subjects = [...new Set(sorted.map((t) => t.subject))];
+    const dateMap: Record<string, Record<string, number>> = {};
+    sorted.forEach((t) => {
+      if (!dateMap[t.test_date]) dateMap[t.test_date] = {};
+      dateMap[t.test_date][t.subject] = Number(t.marks);
+    });
+    const chartData = Object.entries(dateMap).map(([date, marks]) => ({ date, ...marks }));
+    return { subjects, chartData };
+  }, [tests]);
+
+  if (chartData.length < 2) return null;
+
+  return (
+    <div className="bg-card border rounded-xl p-3">
+      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">Performance Trends</h4>
+      <div className="h-44 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="date" tick={{ fontSize: 9 }} />
+            <YAxis tick={{ fontSize: 9 }} />
+            <Tooltip
+              contentStyle={{
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "12px",
+                fontSize: "12px",
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: "10px" }} />
+            {subjects.map((subj, i) => (
+              <Line key={subj} type="monotone" dataKey={subj} stroke={SUBJECT_COLORS[i % SUBJECT_COLORS.length]} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
